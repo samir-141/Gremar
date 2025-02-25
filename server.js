@@ -14,19 +14,6 @@ app.use(express.json());
 app.use('/student', RouterStudent);
 app.use('/traslado', RouterTraladados);
 
-
-
-// Servir la aplicación React en producción
-if (process.env.NODE_ENV === 'production') {
-  // Sirve los archivos estáticos de React
-  app.use(express.static(path.join(__dirname, '../../frontend/build')));
-
-  // Maneja todas las demás rutas redirigiendo al archivo index.html de React
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../../frontend/build', 'index.html'));
-  });
-}
-
 // Inicia el servidor
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
