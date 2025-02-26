@@ -1,4 +1,4 @@
-const {ObtenerDatos, escribirArchivoJson} = require ('./datos')
+const {ObtenerDatos, escribirArchivoJson} = require ('../config/datos')
 
 const TrasladosGet = (req, res) => {
     ObtenerDatos();
