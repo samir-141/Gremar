@@ -1,6 +1,6 @@
-
-config/firebaseKey.json
-
+# Archivos sensibles
+firebaseKey.json
+database-8d5ac-firebase-adminsdk-fbsvc-cf1084cebe.json
 
 # Ignorar dependencias de Node.js
 node_modules/
