@@ -1,5 +1,4 @@
-# Ignorar archivos de configuración sensibles
-.env
+
 config/firebaseKey.json
 
 
