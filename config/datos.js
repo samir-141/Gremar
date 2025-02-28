@@ -1,53 +1,52 @@
-const { db } = require("./firebase");
+const admin = require('firebase-admin');
+const path = require("path");
+// Cargar las credenciales desde el archivo descargado
+const serviceAccount = require(path.join(__dirname, './serviceAccountKey.json'));
 
-/**
- * Obtiene todos los documentos de la colección "students" en Firestore.
- * @returns {Promise<Array>} Lista de estudiantes.
- */
-const obtenerDatos = async () => {
+// Inicializar Firebase Admin
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
+const db = admin.firestore();
+const collectionRef = db.collection('usuarios'); // Ajusta el nombre de la colección si es diferente
+
+let cacheDatos = null; // Caché en memoria
+
+async function obtenerDatos() {
   try {
-    const snapshot = await db.collection("students").get();
+    if (cacheDatos) return cacheDatos; // Usar caché si existe
 
-    if (snapshot.empty) {
-      console.warn("⚠️ No hay documentos en la colección.");
-      return [];
-    }
+    const snapshot = await collectionRef.get();
+    cacheDatos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    const documentos = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-
-    return documentos;
+    return Array.isArray(cacheDatos) ? cacheDatos : [];
   } catch (error) {
     console.error("❌ Error al obtener datos de Firestore:", error.message);
     return [];
   }
-};
+}
 
-/**
- * Agrega un nuevo documento a la colección especificada en Firestore.
- * @param {string} coleccion - Nombre de la colección en Firestore.
- * @param {Object} datos - Datos a guardar en Firestore.
- * @returns {Promise<Object>} Datos almacenados junto con el ID generado.
- */
-const escribirDatos = async (coleccion, datos) => {
+async function escribirDatos(datos) {
   try {
-    if (!coleccion || typeof coleccion !== "string") {
-      throw new Error("El nombre de la colección debe ser un string válido.");
-    }
-    
-    if (!datos || typeof datos !== "object" || Object.keys(datos).length === 0) {
-      throw new Error("Los datos a escribir deben ser un objeto no vacío.");
+    if (!Array.isArray(datos)) {
+      throw new Error("Datos inválidos, debe ser un array.");
     }
 
-    const docRef = await db.collection(coleccion).add(datos);
-    return { id: docRef.id, ...datos };
+    // Usar un batch para escribir todos los datos en Firestore
+    const batch = db.batch();
+    datos.forEach((dato) => {
+      const docRef = collectionRef.doc(dato.id); // Usa el campo 'id' como clave
+      batch.set(docRef, dato);
+    });
+    await batch.commit();
+
+    cacheDatos = datos; // Actualizar caché
+    return cacheDatos;
   } catch (error) {
-    console.error(`❌ Error al escribir datos en la colección "${coleccion}":`, error.message);
-    throw new Error("Error al escribir datos: " + error.message);
+    console.error("❌ Error al escribir en Firestore:", error.message);
+    throw error;
   }
-};
+}
 
-// Exportar funciones correctamente
 module.exports = { obtenerDatos, escribirDatos };
